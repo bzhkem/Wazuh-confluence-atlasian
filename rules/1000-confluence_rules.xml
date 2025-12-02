@@ -1,0 +1,157 @@
+<group name="confluence,atlassian_audit">
+
+  <!-- Base rule -->
+  <rule id="101000" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="confluence.summary">\.+</field>
+    <description>Confluence: $(confluence.summary)</description>
+  </rule>
+
+  <!-- System messages -->
+  <rule id="101003" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="confluence.action">.+</field>
+    <description>Confluence System: $(confluence.description)</description>
+  </rule>
+
+  <!-- Errors -->
+  <rule id="101001" level="14">
+    <if_sid>101003</if_sid>
+    <field name="confluence.action">extraction error</field>
+    <description>Confluence: Extraction error</description>
+  </rule>
+
+  <!-- USER CREATED -->
+  <rule id="101010" level="8">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">User created</field>
+    <description>Confluence: New user created - $(confluence.affectedObject.name)</description>
+  </rule>
+
+  <!-- USER DELETED -->
+  <rule id="101011" level="10">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">User deleted</field>
+    <description>Confluence: User deleted - $(confluence.affectedObject.name)</description>
+  </rule>
+
+  <!-- USER DEACTIVATED -->
+  <rule id="101012" level="9">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">User deactivated</field>
+    <description>Confluence: User deactivated - $(confluence.affectedObject.name)</description>
+  </rule>
+
+  <!-- USER ADDED TO GROUP -->
+  <rule id="101020" level="7">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">User added to group</field>
+    <description>Confluence: $(user) added to group by $(confluence.author.displayName)</description>
+  </rule>
+
+  <!-- USER REMOVED FROM GROUP -->
+  <rule id="101021" level="8">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">User removed from group</field>
+    <description>Confluence: $(user) removed from group by $(confluence.author.displayName)</description>
+  </rule>
+
+  <!-- SPACE CREATED -->
+  <rule id="101030" level="7">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">Space created</field>
+    <description>Confluence: Space created - $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+  </rule>
+
+  <!-- SPACE DELETED -->
+  <rule id="101031" level="10">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">Space deleted</field>
+    <description>Confluence: Space deleted - $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+  </rule>
+
+  <!-- SPACE ARCHIVED -->
+  <rule id="101032" level="7">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">Space archived</field>
+    <description>Confluence: Space archived - $(confluence.affectedObject.name)</description>
+  </rule>
+
+  <!-- PERMISSION ADDED -->
+  <rule id="101040" level="9">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">permission added</field>
+    <description>Confluence: Permission added for $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+  </rule>
+
+  <!-- PERMISSION REMOVED -->
+  <rule id="101041" level="9">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">permission removed</field>
+    <description>Confluence: Permission removed for $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+  </rule>
+
+  <!-- CONTENT ARCHIVED -->
+  <rule id="101050" level="6">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">Content archived</field>
+    <description>Confluence: Content archived - $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+  </rule>
+
+  <!-- CONTENT RESTRICTION ADDED -->
+  <rule id="101051" level="8">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">Content restriction added</field>
+    <description>Confluence: Access restricted for $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+  </rule>
+
+  <!-- CONTENT RESTRICTION REMOVED -->
+  <rule id="101052" level="7">
+    <if_sid>101000</if_sid>
+    <field name="confluence.summary">Content restriction removed</field>
+    <description>Confluence: Access unrestricted for $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+  </rule>
+
+  <!-- EXPORT EVENTS -->
+  <rule id="101060" level="8">
+    <if_sid>101000</if_sid>
+    <match>export</match>
+    <description>Confluence: Export - $(confluence.summary) - $(confluence.affectedObject.name)</description>
+  </rule>
+
+  <!-- ADMIN ADDED -->
+  <rule id="101070" level="11">
+    <if_sid>101020</if_sid>
+    <match>admin</match>
+    <description>Confluence: $(user) added to ADMIN group by $(confluence.author.displayName)</description>
+  </rule>
+
+  <!-- CORRELATION: Multiple user changes -->
+  <rule id="101200" level="11" frequency="10" timeframe="300">
+    <if_matched_sid>101010</if_matched_sid>
+    <if_matched_sid>101011</if_matched_sid>
+    <if_matched_sid>101012</if_matched_sid>
+    <description>Confluence: Suspicious - Multiple user account changes detected</description>
+  </rule>
+
+  <!-- CORRELATION: Multiple group modifications -->
+  <rule id="101201" level="10" frequency="15" timeframe="300">
+    <if_matched_sid>101020</if_matched_sid>
+    <if_matched_sid>101021</if_matched_sid>
+    <description>Confluence: High activity - Multiple group membership changes</description>
+  </rule>
+
+  <!-- CORRELATION: Multiple permission changes -->
+  <rule id="101202" level="11" frequency="10" timeframe="180">
+    <if_matched_sid>101040</if_matched_sid>
+    <if_matched_sid>101041</if_matched_sid>
+    <description>Confluence: Warning - Intensive permission modifications</description>
+  </rule>
+
+  <!-- CORRELATION: Mass exports -->
+  <rule id="101203" level="12" frequency="5" timeframe="600">
+    <if_matched_sid>101060</if_matched_sid>
+    <description>Confluence: Alert - Multiple export operations detected</description>
+  </rule>
+
+</group>

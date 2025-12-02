@@ -1,0 +1,224 @@
+<!--
+  Confluence Audit Log rules ID: 100800 - 100899
+-->
+
+<var name="confluence_description">Confluence $(confluence.action)</var>
+
+<group name="confluence,confluence_audit">
+
+  <!-- Base rule for all Confluence audit events -->
+  <rule id="100800" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="confluence.action">\.+</field>
+    <description>$confluence_description</description>
+  </rule>
+
+  <!-- Extraction errors and warnings -->
+  <rule id="100801" level="14">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^extraction error</field>
+    <description>$confluence_description</description>
+  </rule>
+
+  <rule id="100802" level="12">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^extraction warning</field>
+    <description>$confluence_description</description>
+  </rule>
+
+  <!-- Authentication and Admin Key Access - Critical -->
+  <rule id="100810" level="10">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Logged in to Confluence admin key$|^Logged out of Confluence admin key$</field>
+    <description>Confluence : Admin key access by user $(user)</description>
+  </rule>
+
+  <!-- Global Permission Changes - Critical -->
+  <rule id="100812" level="10">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Added Confluence global permission$|^Removed Confluence global permission$</field>
+    <description>Confluence : Global permission "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Bulk Permission Operations - High Risk -->
+  <rule id="100814" level="10">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Set Confluence space permissions in bulk$|^Removed Confluence space permissions in bulk$|^Reassigned Confluence space role in bulk$|^Set Confluence space role in bulk$|^Removed Confluence space role in bulk$</field>
+    <description>Confluence : Bulk permission operation "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Space Permission Changes - High Risk -->
+  <rule id="100816" level="9">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Added Confluence space permission$|^Removed Confluence space permission$|^Copied Confluence space permission$|^Added Confluence default space permission$|^Removed Confluence default space permission$</field>
+    <description>Confluence : Space permission "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Content Permission Changes - High Risk -->
+  <rule id="100818" level="9">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Added Confluence content permission$|^Removed Confluence content permission$|^Added Confluence content restriction$|^Removed Confluence content restriction$</field>
+    <description>Confluence : Content permission "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Public Link Changes - Data Exposure Risk -->
+  <rule id="100820" level="10">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Enabled Confluence public links$|^Disabled Confluence public links$|^Changed Confluence public link permissions$|^Changed Confluence public links default space status$|^Enabled Confluence public links on page$</field>
+    <description>Confluence : Public link "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Public Link Bulk Operations -->
+  <rule id="100822" level="10">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Updated Confluence public link content status in bulk$|^Updated Confluence public link space status$</field>
+    <description>Confluence : Bulk public link "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Data Classification Changes - Compliance Risk -->
+  <rule id="100824" level="10">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Updated classification level of Confluence content$|^Updated default classification of Confluence space$</field>
+    <description>Confluence : Data classification "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Space Deletion - Data Loss Risk -->
+  <rule id="100826" level="10">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Deleted Confluence space$|^Soft deleted Confluence space$</field>
+    <description>Confluence : Space deletion "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Content Redaction - Sensitive Operation -->
+  <rule id="100828" level="10">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Redacted Confluence content$</field>
+    <description>Confluence : Content redaction by user $(user)</description>
+  </rule>
+
+  <!-- Export Operations - Data Exfiltration Risk -->
+  <rule id="100830" level="8">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Completed Confluence space export$|^Completed Confluence page export$|^Completed Confluence blog export$|^Exported dashboard$</field>
+    <description>Confluence : Export operation "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <rule id="100832" level="7">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Downloaded Confluence space export$|^Downloaded Confluence page export$|^Downloaded Confluence blog export$</field>
+    <description>Confluence : Export download "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Space Role Changes - Privilege Management -->
+  <rule id="100834" level="9">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Created Confluence space role$|^Removed Confluence space role$|^Updated Confluence space role$|^Copied Confluence space role assignment$</field>
+    <description>Confluence : Space role "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Group Deletion - Access Control Risk -->
+  <rule id="100836" level="9">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Deleted Confluence group$</field>
+    <description>Confluence : Group deletion by user $(user)</description>
+  </rule>
+
+  <!-- Space Trash Operations -->
+  <rule id="100838" level="7">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Emptied Confluence space trash$</field>
+    <description>Confluence : Permanent deletion "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Global Settings Changes - System-wide Impact -->
+  <rule id="100840" level="9">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Changed Confluence global settings$</field>
+    <description>Confluence : Global settings change by user $(user)</description>
+  </rule>
+
+  <!-- Space Archive/Restore Operations -->
+  <rule id="100842" level="7">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Archived Confluence space$|^Unarchived Confluence space$|^Restored Confluence soft deleted space$</field>
+    <description>Confluence : Space archive/restore "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Space Ownership Transfer -->
+  <rule id="100844" level="8">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Updated Confluence space owner$</field>
+    <description>Confluence : Space ownership transfer by user $(user)</description>
+  </rule>
+
+  <!-- API Access Monitoring -->
+  <rule id="100846" level="5">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Made request to API$</field>
+    <description>Confluence : API request by user $(user)</description>
+  </rule>
+
+  <!-- Content Creation/Editing - Normal Operations -->
+  <rule id="100848" level="4">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Created Confluence page$|^Edited Confluence page$|^Created Confluence space$|^Updated Confluence space$</field>
+    <description>$confluence_description</description>
+  </rule>
+
+  <!-- AI-Generated Content - Policy Monitoring -->
+  <rule id="100850" level="7">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Confluence Page Generated AI Content$|^Confluence Page Triggered Policy Violation$</field>
+    <description>Confluence : AI content "$(confluence.action)" by user $(user)</description>
+  </rule>
+
+  <!-- Malware Detection - Critical -->
+  <rule id="100852" level="12">
+    <if_sid>100800</if_sid>
+    <field name="confluence.action">^Malware Detected and Classified$</field>
+    <description>Confluence : MALWARE DETECTED by user $(user)</description>
+  </rule>
+
+  <!-- Correlation: Multiple Permission Changes - Possible Privilege Abuse -->
+  <rule id="100860" level="12" frequency="5" timeframe="300" ignore="600">
+    <if_matched_sid>100812,100814,100816,100818</if_matched_sid>
+    <same_field>user</same_field>
+    <description>Confluence : Suspicious multiple permission changes by user $(user)</description>
+  </rule>
+
+  <!-- Correlation: Rapid Export Operations - Data Exfiltration Risk -->
+  <rule id="100862" level="12" frequency="5" timeframe="600" ignore="600">
+    <if_matched_sid>100830,100832</if_matched_sid>
+    <same_field>user</same_field>
+    <description>Confluence : Suspicious rapid export activity by user $(user)</description>
+  </rule>
+
+  <!-- Correlation: Multiple Space Deletions - Sabotage Risk -->
+  <rule id="100864" level="12" frequency="3" timeframe="300" ignore="600">
+    <if_matched_sid>100826</if_matched_sid>
+    <same_field>user</same_field>
+    <description>Confluence : Suspicious multiple space deletions by user $(user)</description>
+  </rule>
+
+  <!-- Correlation: Public Link Mass Enabling - Data Exposure -->
+  <rule id="100866" level="12" frequency="10" timeframe="300" ignore="600">
+    <if_matched_sid>100820,100822</if_matched_sid>
+    <same_field>user</same_field>
+    <description>Confluence : Suspicious mass public link enabling by user $(user)</description>
+  </rule>
+
+  <!-- Correlation: Intensive Admin Key Usage -->
+  <rule id="100868" level="11" frequency="10" timeframe="600" ignore="600">
+    <if_matched_sid>100810</if_matched_sid>
+    <same_field>user</same_field>
+    <description>Confluence : Intensive admin key usage by user $(user)</description>
+  </rule>
+
+  <!-- Correlation: Intensive API Access - Possible Automation Attack -->
+  <rule id="100870" level="10" frequency="50" timeframe="60" ignore="600">
+    <if_matched_sid>100846</if_matched_sid>
+    <same_field>user</same_field>
+    <description>Confluence : Intensive API access by user $(user)</description>
+  </rule>
+
+</group>

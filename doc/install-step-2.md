@@ -29,11 +29,37 @@ Create the configuration file by adapting and then running this command:
 ```
 cat > config.json << EOF
 {
- "orgId": "<your Org ID>",
- "apiKey": "<your API key>"
+  "cloudId": "your Cloud ID",
+  "email": "your service account Email",
+  "apiKey": "your API key"
 }
 EOF
 ```
+
+> [!NOTE]  
+> if you are using 2 differents API keys you will need 2 distinctive config files
+
+for the jira wodle
+```
+cat > jira_config.json << EOF
+{
+  "cloudId": "your Cloud ID",
+  "email": "your service account Email",
+  "apiKey": "your jira API key"
+}
+EOF
+```
+for the confluence wodle
+```
+cat > confluence_config.json << EOF
+{
+  "cloudId": "your Cloud ID",
+  "email": "your service account Email",
+  "apiKey": "your Confluence API key"
+}
+EOF
+```
+
 
 Your Org ID is the UUID in the URL when you use admin.atlassian.com. For example for the URL `https://admin.atlassian.com/o/e026e7a7-1112-463a-8534-71c4b6a8ee21/overview`
 .. the Org ID is `e026e7a7-1112-463a-8534-71c4b6a8ee21`
