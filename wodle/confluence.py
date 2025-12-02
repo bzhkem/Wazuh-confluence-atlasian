@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import requests, os, sys, json, argparse, tempfile, traceback, random, time, glob
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, 'config.json')
-CONFLUENCE_CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, 'confluence_config.json')
-STATE_FILE_PATH = os.path.join(SCRIPT_PATH, 'confluence_state.json')
+CONFLUENCE_CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, 'confluence-config.json')
+STATE_FILE_PATH = os.path.join(SCRIPT_PATH, 'confluence-state.json')
 TEMP_LOG_DIR = "/tmp"
 STR_CLOUD_ID = 'cloudId'
-STR_EMAIL = 'email'
-STR_API_KEY = 'apiKey'
+STR_EMAIL = 'AppApi-AccountEmail'
+STR_API_KEY = 'AppApi-Key'
 STR_LAST_TIMESTAMP = 'lastTimestamp'
 STR_LAST_ID = 'lastRecordId'
 STR_CONFLUENCE = 'confluence'
@@ -143,19 +143,20 @@ def get_logs():
     last_timestamp_ms = state.get(STR_LAST_TIMESTAMP)
     last_record_id = state.get(STR_LAST_ID, 0)
     
-    # Conversion en datetime pour affichage seulement
+    # Determine filtering strategy
     if last_timestamp_ms:
         try:
             last_timestamp_ms = int(last_timestamp_ms)
             last_timestamp_dt = datetime.fromtimestamp(last_timestamp_ms / 1000, tz=timezone.utc)
             json_msg('filtering', f'fetching events after {last_timestamp_dt.isoformat()} (ID > {last_record_id})')
-        except:
-            last_timestamp_ms = int((datetime.now(timezone.utc) - timedelta(days=1)).timestamp() * 1000)
+        except Exception as e:
+            warning(f"Failed to parse stored timestamp, fetching recent events: {e}")
+            last_timestamp_ms = None
             last_record_id = 0
-            json_msg('filtering', f'invalid timestamp in state, fetching last 24h')
     else:
-        last_timestamp_ms = int((datetime.now(timezone.utc) - timedelta(days=1)).timestamp() * 1000)
-        json_msg('filtering', f'no previous state, fetching last 24h')
+        json_msg('filtering', f'no previous state, fetching up to {args.limit} most recent events')
+        last_timestamp_ms = None
+        last_record_id = 0
 
     start = 0
     limit = 100
@@ -207,21 +208,27 @@ def get_logs():
             
             if created_ms_str:
                 try:
-                    # Confluence timestamp est en millisecondes
+                    # Confluence timestamp is in milliseconds
                     created_ms = int(created_ms_str)
                     
-                    # Comparaison en millisecondes directement
-                    if created_ms > last_timestamp_ms:
+                    # If we have a last timestamp, filter based on it
+                    if last_timestamp_ms is not None:
+                        # Comparison in milliseconds directly
+                        if created_ms > last_timestamp_ms:
+                            new_events.append(record)
+                        elif created_ms == last_timestamp_ms and record_id > last_record_id:
+                            new_events.append(record)
+                        elif created_ms < last_timestamp_ms:
+                            stop_fetching = True
+                            break
+                    else:
+                        # No previous state - accept all events (up to limit)
                         new_events.append(record)
-                    elif created_ms == last_timestamp_ms and record_id > last_record_id:
-                        new_events.append(record)
-                    elif created_ms < last_timestamp_ms:
-                        stop_fetching = True
-                        break
                         
                 except Exception as e:
                     warning(f"Failed to parse timestamp: {e}")
-                    if record_id > last_record_id:
+                    # If we can't parse timestamp but no state exists, include it
+                    if last_timestamp_ms is None:
                         new_events.append(record)
 
         start += len(records)
@@ -230,8 +237,10 @@ def get_logs():
         if events_fetched_in_batch < limit:
             break
 
+    # Sort events by timestamp and ID
     new_events.sort(key=lambda x: (int(x.get('creationDate', '0')), generate_record_id(x)))
 
+    # Write events
     for record in new_events:
         write_event(record)
         events_fetched += 1
@@ -349,10 +358,10 @@ def update_state():
     for line in RESULTS:
         event = json.loads(line)
         if 'timestamp' in event and 'id' in event:
-            event_timestamp = event['timestamp']  # C'est en millisecondes!
+            event_timestamp = event['timestamp']  # Already in milliseconds
             event_id = int(event['id'])
             
-            # Comparaison correcte en millisecondes
+            # Correct comparison in milliseconds
             if not last_timestamp or int(event_timestamp) > int(last_timestamp):
                 last_timestamp = event_timestamp
                 last_id = event_id
@@ -360,7 +369,7 @@ def update_state():
                 last_id = max(last_id, event_id)
 
     if last_timestamp:
-        state[STR_LAST_TIMESTAMP] = str(last_timestamp)  # Sauvegarde en millisecondes
+        state[STR_LAST_TIMESTAMP] = str(last_timestamp)  # Save in milliseconds
         state[STR_LAST_ID] = last_id
         save_state(state)
         json_msg('state updated', f'lastTimestamp={last_timestamp}, lastRecordId={last_id}')

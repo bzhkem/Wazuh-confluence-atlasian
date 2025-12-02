@@ -1,157 +1,299 @@
-<group name="confluence,atlassian_audit">
+<!-- 
+Confluence Audit Rules for Wazuh
+Filename: 0585-confluence_audit_rules.xml
+Location: /var/ossec/etc/rules/
+IDs: 101000 - 101199
+-->
 
-  <!-- Base rule -->
+<group name="confluence,audit,atlassian,">
+
+  <!-- ========================================== -->
+  <!-- BASE RULE -->
+  <!-- ========================================== -->
+  
   <rule id="101000" level="3">
     <decoded_as>json</decoded_as>
     <field name="confluence.summary">\.+</field>
-    <description>Confluence: $(confluence.summary)</description>
+    <description>Confluence: $(confluence.summary) by $(actor)</description>
+    <group>confluence_audit,</group>
   </rule>
 
-  <!-- System messages -->
-  <rule id="101003" level="3">
+  <!-- ========================================== -->
+  <!-- SCRIPT STATUS -->
+  <!-- ========================================== -->
+  
+  <rule id="101001" level="3">
     <decoded_as>json</decoded_as>
-    <field name="confluence.action">.+</field>
-    <description>Confluence System: $(confluence.description)</description>
+    <field name="confluence.action">\.+</field>
+    <description>Confluence Script: $(confluence.description)</description>
+    <group>confluence_script,</group>
   </rule>
 
-  <!-- Errors -->
-  <rule id="101001" level="14">
-    <if_sid>101003</if_sid>
+  <rule id="101002" level="14">
+    <if_sid>101001</if_sid>
     <field name="confluence.action">extraction error</field>
     <description>Confluence: Extraction error</description>
+    <group>confluence_error,</group>
   </rule>
 
-  <!-- USER CREATED -->
-  <rule id="101010" level="8">
+  <!-- ========================================== -->
+  <!-- USER MANAGEMENT -->
+  <!-- ========================================== -->
+  
+  <rule id="101010" level="9">
     <if_sid>101000</if_sid>
+    <field name="confluence.category">Users and groups</field>
     <field name="confluence.summary">User created</field>
-    <description>Confluence: New user created - $(confluence.affectedObject.name)</description>
+    <description>Confluence User Created: $(user) by $(actor) from $(srcip)</description>
+    <mitre>
+      <id>T1136</id>
+    </mitre>
+    <group>confluence_user_mgmt,user_creation,pci_dss_10.2.5,</group>
   </rule>
 
-  <!-- USER DELETED -->
   <rule id="101011" level="10">
     <if_sid>101000</if_sid>
+    <field name="confluence.category">Users and groups</field>
     <field name="confluence.summary">User deleted</field>
-    <description>Confluence: User deleted - $(confluence.affectedObject.name)</description>
+    <description>Confluence User Deleted: $(user) by $(actor)</description>
+    <group>confluence_user_mgmt,user_deletion,</group>
   </rule>
 
-  <!-- USER DEACTIVATED -->
   <rule id="101012" level="9">
     <if_sid>101000</if_sid>
+    <field name="confluence.category">Users and groups</field>
     <field name="confluence.summary">User deactivated</field>
-    <description>Confluence: User deactivated - $(confluence.affectedObject.name)</description>
+    <description>Confluence User Deactivated: $(user) by $(actor)</description>
+    <group>confluence_user_mgmt,user_deactivation,</group>
   </rule>
 
-  <!-- USER ADDED TO GROUP -->
-  <rule id="101020" level="7">
+  <rule id="101013" level="8">
     <if_sid>101000</if_sid>
+    <field name="confluence.category">Users and groups</field>
+    <field name="confluence.summary">User details updated</field>
+    <description>Confluence User Updated: $(user) by $(actor)</description>
+    <group>confluence_user_mgmt,user_update,</group>
+  </rule>
+
+  <!-- ========================================== -->
+  <!-- GROUP MANAGEMENT -->
+  <!-- ========================================== -->
+  
+  <rule id="101020" level="8">
+    <if_sid>101000</if_sid>
+    <field name="confluence.category">Users and groups</field>
     <field name="confluence.summary">User added to group</field>
-    <description>Confluence: $(user) added to group by $(confluence.author.displayName)</description>
+    <description>Confluence: User added to group by $(actor)</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>confluence_group_mgmt,group_addition,pci_dss_10.2.5,</group>
   </rule>
 
-  <!-- USER REMOVED FROM GROUP -->
-  <rule id="101021" level="8">
+  <rule id="101021" level="11">
+    <if_sid>101020</if_sid>
+    <field name="confluence.summary">admin</field>
+    <description>Confluence ADMIN ACCESS: User added to admin group by $(actor)</description>
+    <group>confluence_admin_group,privilege_escalation,gdpr_IV_35.7.d,</group>
+  </rule>
+
+  <rule id="101022" level="8">
     <if_sid>101000</if_sid>
+    <field name="confluence.category">Users and groups</field>
     <field name="confluence.summary">User removed from group</field>
-    <description>Confluence: $(user) removed from group by $(confluence.author.displayName)</description>
+    <description>Confluence: User removed from group by $(actor)</description>
+    <group>confluence_group_mgmt,group_removal,</group>
   </rule>
 
-  <!-- SPACE CREATED -->
-  <rule id="101030" level="7">
+  <rule id="101023" level="9">
     <if_sid>101000</if_sid>
+    <field name="confluence.category">Users and groups</field>
+    <field name="confluence.summary">Group created</field>
+    <description>Confluence Group Created by $(actor)</description>
+    <group>confluence_group_mgmt,group_creation,</group>
+  </rule>
+
+  <rule id="101024" level="10">
+    <if_sid>101000</if_sid>
+    <field name="confluence.category">Users and groups</field>
+    <field name="confluence.summary">Group deleted</field>
+    <description>Confluence Group Deleted by $(actor)</description>
+    <group>confluence_group_mgmt,group_deletion,</group>
+  </rule>
+
+  <!-- ========================================== -->
+  <!-- PERMISSIONS -->
+  <!-- ========================================== -->
+  
+  <rule id="101030" level="9">
+    <if_sid>101000</if_sid>
+    <field name="confluence.category">Permissions</field>
+    <field name="confluence.summary">Space permission added</field>
+    <description>Confluence: Space permission added by $(actor)</description>
+    <group>confluence_permissions,permission_add,</group>
+  </rule>
+
+  <rule id="101031" level="9">
+    <if_sid>101000</if_sid>
+    <field name="confluence.category">Permissions</field>
+    <field name="confluence.summary">Space permission removed</field>
+    <description>Confluence: Space permission removed by $(actor)</description>
+    <group>confluence_permissions,permission_removal,</group>
+  </rule>
+
+  <rule id="101032" level="10">
+    <if_sid>101000</if_sid>
+    <field name="confluence.category">Permissions</field>
+    <field name="confluence.summary">Global permission</field>
+    <description>Confluence: Global permission change by $(actor)</description>
+    <group>confluence_permissions,global_permission,</group>
+  </rule>
+
+  <!-- ========================================== -->
+  <!-- SPACE MANAGEMENT -->
+  <!-- ========================================== -->
+  
+  <rule id="101040" level="7">
+    <if_sid>101000</if_sid>
+    <field name="confluence.category">Spaces</field>
     <field name="confluence.summary">Space created</field>
-    <description>Confluence: Space created - $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+    <description>Confluence Space Created by $(actor)</description>
+    <group>confluence_spaces,space_creation,</group>
   </rule>
 
-  <!-- SPACE DELETED -->
-  <rule id="101031" level="10">
+  <rule id="101041" level="10">
     <if_sid>101000</if_sid>
+    <field name="confluence.category">Spaces</field>
     <field name="confluence.summary">Space deleted</field>
-    <description>Confluence: Space deleted - $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+    <description>Confluence Space DELETED by $(actor)</description>
+    <mitre>
+      <id>T1485</id>
+    </mitre>
+    <group>confluence_spaces,space_deletion,data_loss,pci_dss_10.2.7,</group>
   </rule>
 
-  <!-- SPACE ARCHIVED -->
-  <rule id="101032" level="7">
+  <rule id="101042" level="7">
     <if_sid>101000</if_sid>
+    <field name="confluence.category">Spaces</field>
     <field name="confluence.summary">Space archived</field>
-    <description>Confluence: Space archived - $(confluence.affectedObject.name)</description>
+    <description>Confluence Space Archived by $(actor)</description>
+    <group>confluence_spaces,space_archive,</group>
   </rule>
 
-  <!-- PERMISSION ADDED -->
-  <rule id="101040" level="9">
+  <rule id="101043" level="8">
     <if_sid>101000</if_sid>
-    <field name="confluence.summary">permission added</field>
-    <description>Confluence: Permission added for $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+    <field name="confluence.category">Spaces</field>
+    <field name="confluence.summary">Space trash emptied</field>
+    <description>Confluence: Space trash emptied - Permanent deletion</description>
+    <group>confluence_spaces,permanent_deletion,data_loss,</group>
   </rule>
 
-  <!-- PERMISSION REMOVED -->
-  <rule id="101041" level="9">
-    <if_sid>101000</if_sid>
-    <field name="confluence.summary">permission removed</field>
-    <description>Confluence: Permission removed for $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
-  </rule>
-
-  <!-- CONTENT ARCHIVED -->
+  <!-- ========================================== -->
+  <!-- CONTENT OPERATIONS -->
+  <!-- ========================================== -->
+  
   <rule id="101050" level="6">
     <if_sid>101000</if_sid>
+    <field name="confluence.category">Content</field>
     <field name="confluence.summary">Content archived</field>
-    <description>Confluence: Content archived - $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+    <description>Confluence Content Archived by $(actor)</description>
+    <group>confluence_content,content_archive,</group>
   </rule>
 
-  <!-- CONTENT RESTRICTION ADDED -->
-  <rule id="101051" level="8">
+  <!-- ========================================== -->
+  <!-- IMPORT/EXPORT (Data Exfiltration Risk) -->
+  <!-- ========================================== -->
+  
+  <rule id="101060" level="9">
     <if_sid>101000</if_sid>
-    <field name="confluence.summary">Content restriction added</field>
-    <description>Confluence: Access restricted for $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+    <field name="confluence.category">Import/Export</field>
+    <field name="confluence.summary">Site export</field>
+    <description>Confluence FULL SITE EXPORT by $(actor) from $(srcip)</description>
+    <mitre>
+      <id>T1567</id>
+    </mitre>
+    <group>confluence_export,data_exfiltration_risk,pci_dss_10.2.7,</group>
   </rule>
 
-  <!-- CONTENT RESTRICTION REMOVED -->
-  <rule id="101052" level="7">
+  <rule id="101061" level="8">
     <if_sid>101000</if_sid>
-    <field name="confluence.summary">Content restriction removed</field>
-    <description>Confluence: Access unrestricted for $(confluence.affectedObject.name) by $(confluence.author.displayName)</description>
+    <field name="confluence.category">Import/Export</field>
+    <field name="confluence.summary">Space export</field>
+    <description>Confluence Space Export by $(actor) from $(srcip)</description>
+    <mitre>
+      <id>T1567</id>
+    </mitre>
+    <group>confluence_export,data_exfiltration_risk,</group>
   </rule>
 
-  <!-- EXPORT EVENTS -->
-  <rule id="101060" level="8">
+  <rule id="101062" level="8">
     <if_sid>101000</if_sid>
-    <match>export</match>
-    <description>Confluence: Export - $(confluence.summary) - $(confluence.affectedObject.name)</description>
+    <field name="confluence.category">Import/Export</field>
+    <field name="confluence.summary">Site import</field>
+    <description>Confluence FULL SITE IMPORT by $(actor)</description>
+    <group>confluence_import,</group>
   </rule>
 
-  <!-- ADMIN ADDED -->
-  <rule id="101070" level="11">
-    <if_sid>101020</if_sid>
-    <match>admin</match>
-    <description>Confluence: $(user) added to ADMIN group by $(confluence.author.displayName)</description>
-  </rule>
-
-  <!-- CORRELATION: Multiple user changes -->
-  <rule id="101200" level="11" frequency="10" timeframe="300">
+  <!-- ========================================== -->
+  <!-- FREQUENCY RULES -->
+  <!-- ========================================== -->
+  
+  <rule id="101100" level="11" frequency="10" timeframe="300">
     <if_matched_sid>101010</if_matched_sid>
-    <if_matched_sid>101011</if_matched_sid>
-    <if_matched_sid>101012</if_matched_sid>
-    <description>Confluence: Suspicious - Multiple user account changes detected</description>
+    <description>Confluence: 10+ user creations in 5min</description>
+    <mitre>
+      <id>T1136</id>
+    </mitre>
+    <group>confluence_multiple_users,suspicious_activity,</group>
   </rule>
 
-  <!-- CORRELATION: Multiple group modifications -->
-  <rule id="101201" level="10" frequency="15" timeframe="300">
-    <if_matched_sid>101020</if_matched_sid>
-    <if_matched_sid>101021</if_matched_sid>
-    <description>Confluence: High activity - Multiple group membership changes</description>
-  </rule>
-
-  <!-- CORRELATION: Multiple permission changes -->
-  <rule id="101202" level="11" frequency="10" timeframe="180">
-    <if_matched_sid>101040</if_matched_sid>
-    <if_matched_sid>101041</if_matched_sid>
-    <description>Confluence: Warning - Intensive permission modifications</description>
-  </rule>
-
-  <!-- CORRELATION: Mass exports -->
-  <rule id="101203" level="12" frequency="5" timeframe="600">
+  <rule id="101101" level="12" frequency="5" timeframe="600">
     <if_matched_sid>101060</if_matched_sid>
-    <description>Confluence: Alert - Multiple export operations detected</description>
+    <description>Confluence: 5+ exports in 10min - Data exfiltration alert</description>
+    <mitre>
+      <id>T1567</id>
+    </mitre>
+    <group>confluence_multiple_exports,data_exfiltration,critical,</group>
+  </rule>
+
+  <rule id="101102" level="12" frequency="3" timeframe="300">
+    <if_matched_sid>101041</if_matched_sid>
+    <description>Confluence: 3+ space deletions in 5min</description>
+    <mitre>
+      <id>T1485</id>
+    </mitre>
+    <group>confluence_multiple_deletions,data_loss,critical,</group>
+  </rule>
+
+  <rule id="101103" level="11" frequency="15" timeframe="300">
+    <if_matched_sid>101020</if_matched_sid>
+    <same_field>actor</same_field>
+    <description>Confluence: 15+ group additions by $(actor) in 5min</description>
+    <group>confluence_bulk_group_changes,suspicious_activity,</group>
+  </rule>
+
+  <!-- ========================================== -->
+  <!-- OFF-HOURS DETECTION -->
+  <!-- ========================================== -->
+  
+  <rule id="101110" level="10">
+    <if_sid>101021</if_sid>
+    <time>22:00-06:00</time>
+    <description>Confluence ADMIN ACCESS OFF-HOURS by $(actor)</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>confluence_off_hours,admin_access,suspicious_activity,</group>
+  </rule>
+
+  <rule id="101111" level="10">
+    <if_sid>101060</if_sid>
+    <time>22:00-06:00</time>
+    <description>Confluence SITE EXPORT OFF-HOURS by $(actor) from $(srcip)</description>
+    <mitre>
+      <id>T1567</id>
+    </mitre>
+    <group>confluence_off_hours,data_exfiltration,critical,</group>
   </rule>
 
 </group>

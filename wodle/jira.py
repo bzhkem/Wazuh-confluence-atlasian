@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import requests, os, sys, json, argparse, tempfile, traceback, random, time, glob
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, 'config.json')
-JIRA_CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, 'jira_config.json')
-STATE_FILE_PATH = os.path.join(SCRIPT_PATH, 'jira_state.json')
+JIRA_CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, 'jira-config.json')
+STATE_FILE_PATH = os.path.join(SCRIPT_PATH, 'jira-state.json')
 TEMP_LOG_DIR = "/tmp"
 STR_CLOUD_ID = 'cloudId'
-STR_EMAIL = 'email'
-STR_API_KEY = 'apiKey'
+STR_EMAIL = 'AppApi-AccountEmail'
+STR_API_KEY = 'AppApi-Key'
 STR_LAST_TIMESTAMP = 'lastTimestamp'
 STR_LAST_ID = 'lastRecordId'
 STR_JIRA = 'jira'
@@ -169,18 +169,19 @@ def get_logs():
     last_timestamp_str = state.get(STR_LAST_TIMESTAMP)
     last_record_id = state.get(STR_LAST_ID, 0)
     
+    # Determine filtering strategy
+    last_timestamp = None
     if last_timestamp_str:
         try:
             last_timestamp = parse_jira_timestamp(last_timestamp_str)
             json_msg('filtering', f'fetching events after {last_timestamp.isoformat()} (ID > {last_record_id})')
-        except:
-            last_timestamp = datetime.now(timezone.utc) - timedelta(days=1)
+        except Exception as e:
+            warning(f"Failed to parse stored timestamp, fetching recent events: {e}")
+            last_timestamp = None
             last_record_id = 0
-            json_msg('filtering', f'invalid timestamp in state, fetching last 24h')
     else:
-        last_timestamp = datetime.now(timezone.utc) - timedelta(days=1)
+        json_msg('filtering', f'no previous state, fetching up to {args.limit} most recent events')
         last_record_id = 0
-        json_msg('filtering', f'no previous state, fetching last 24h')
 
     offset = 0
     limit = 100
@@ -234,17 +235,22 @@ def get_logs():
                 try:
                     created = parse_jira_timestamp(created_str)
                     
-                    # Skip events that are older than our last processed event
-                    if created < last_timestamp:
-                        stop_fetching = True
-                        break
-                    
-                    # Skip events with same timestamp but same or lower ID
-                    if created == last_timestamp and record_id <= last_record_id:
-                        continue
-                    
-                    # This is a new event
-                    if created > last_timestamp or (created == last_timestamp and record_id > last_record_id):
+                    # If we have a last timestamp, filter based on it
+                    if last_timestamp:
+                        # Skip events that are older than our last processed event
+                        if created < last_timestamp:
+                            stop_fetching = True
+                            break
+                        
+                        # Skip events with same timestamp but same or lower ID
+                        if created == last_timestamp and record_id <= last_record_id:
+                            continue
+                        
+                        # This is a new event
+                        if created > last_timestamp or (created == last_timestamp and record_id > last_record_id):
+                            new_events.append(record)
+                    else:
+                        # No previous state - accept all events (up to limit)
                         new_events.append(record)
                         
                 except Exception as e:
@@ -255,8 +261,10 @@ def get_logs():
         if not data.get('hasMore', False):
             break
 
+    # Sort events by timestamp and ID
     new_events.sort(key=lambda x: (x.get('created', ''), int(x.get('id', 0))))
 
+    # Write events
     for record in new_events:
         write_event(record)
         events_fetched += 1
@@ -392,3 +400,4 @@ if __name__ == '__main__':
         main()
     except Exception as ex:
         fatal_error("fatal exception :\n" + traceback.format_exc())
+        
