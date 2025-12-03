@@ -95,11 +95,9 @@ def load_config():
     # Try config.json first (shared config)
     if os.path.exists(CONFIG_FILE_PATH):
         config_file = CONFIG_FILE_PATH
-        json_msg('config', 'using shared config.json')
     # Fallback to confluence_config.json
     elif os.path.exists(CONFLUENCE_CONFIG_FILE_PATH):
         config_file = CONFLUENCE_CONFIG_FILE_PATH
-        json_msg('config', 'using confluence_config.json')
     else:
         raise FileNotFoundError(
             f"No configuration file found. Please create either:\n"
@@ -148,13 +146,11 @@ def get_logs():
         try:
             last_timestamp_ms = int(last_timestamp_ms)
             last_timestamp_dt = datetime.fromtimestamp(last_timestamp_ms / 1000, tz=timezone.utc)
-            json_msg('filtering', f'fetching events after {last_timestamp_dt.isoformat()} (ID > {last_record_id})')
         except Exception as e:
             warning(f"Failed to parse stored timestamp, fetching recent events: {e}")
             last_timestamp_ms = None
             last_record_id = 0
     else:
-        json_msg('filtering', f'no previous state, fetching up to {args.limit} most recent events')
         last_timestamp_ms = None
         last_record_id = 0
 
@@ -244,8 +240,6 @@ def get_logs():
     for record in new_events:
         write_event(record)
         events_fetched += 1
-
-    json_msg('logs fetched', f'{events_fetched} new events retrieved from Confluence API')
 
 def generate_record_id(record):
     """Generate a numeric ID from record data since Confluence audit may not have IDs"""
@@ -347,7 +341,6 @@ def print_results():
     for line in RESULTS:
         print(line.strip())
         count += 1
-    json_msg('events printed', f'{count} events displayed')
 
 def update_state():
     state = load_state()

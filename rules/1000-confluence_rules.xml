@@ -101,7 +101,7 @@ IDs: 101000 - 101199
     <if_sid>101000</if_sid>
     <field name="confluence.category">Users and groups</field>
     <field name="confluence.summary">User removed from group</field>
-    <description>Confluence: User removed from group by $(actor)</description>
+    <description>Confluence: User removed from group by $(user)</description>
     <group>confluence_group_mgmt,group_removal,</group>
   </rule>
 

@@ -94,10 +94,8 @@ def load_config():
     
     if os.path.exists(CONFIG_FILE_PATH):
         config_file = CONFIG_FILE_PATH
-        json_msg('config', 'using shared config.json')
     elif os.path.exists(JIRA_CONFIG_FILE_PATH):
         config_file = JIRA_CONFIG_FILE_PATH
-        json_msg('config', 'using jira_config.json')
     else:
         raise FileNotFoundError(
             f"No configuration file found. Please create either:\n"
@@ -174,7 +172,6 @@ def get_logs():
     if last_timestamp_str:
         try:
             last_timestamp = parse_jira_timestamp(last_timestamp_str)
-            json_msg('filtering', f'fetching events after {last_timestamp.isoformat()} (ID > {last_record_id})')
         except Exception as e:
             warning(f"Failed to parse stored timestamp, fetching recent events: {e}")
             last_timestamp = None
@@ -269,8 +266,6 @@ def get_logs():
         write_event(record)
         events_fetched += 1
 
-    json_msg('logs fetched', f'{events_fetched} new events retrieved from Jira API')
-
 def extract_relevant_user(record):
     """Extract the most relevant user from the event"""
     summary = record.get('summary', '').lower()
@@ -351,8 +346,6 @@ def print_results():
     for line in RESULTS:
         print(line.strip())
         count += 1
-    json_msg('events printed', f'{count} events displayed')
-
 def update_state():
     state = load_state()
     RESULTS.seek(0)
