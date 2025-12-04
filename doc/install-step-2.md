@@ -30,8 +30,8 @@ Create the configuration file by adapting and then running this command:
 cat > config.json << EOF
 {
   "cloudId": "your Cloud ID",
-  "email": "your service account Email",
-  "apiKey": "your API key"
+  "AppApi-AccountEmail": "your service account Email",
+  "AppApi-Key": "your API key"
 }
 EOF
 ```
@@ -39,27 +39,16 @@ EOF
 > [!NOTE]  
 > if you are using 2 differents API keys you will need 2 distinctive config files
 
-for the jira wodle
+respectively `jira_config.json` for the jira wodle and `confluence_config.json` for the confluence wodle
 ```
-cat > jira_config.json << EOF
+cat > <config-name> << EOF
 {
   "cloudId": "your Cloud ID",
-  "email": "your service account Email",
-  "apiKey": "your jira API key"
+  "AppApi-AccountEmail": "your service account Email",
+  "AppApi-Key": "your API key"
 }
 EOF
 ```
-for the confluence wodle
-```
-cat > confluence_config.json << EOF
-{
-  "cloudId": "your Cloud ID",
-  "email": "your service account Email",
-  "apiKey": "your Confluence API key"
-}
-EOF
-```
-
 
 Your Org ID is the UUID in the URL when you use admin.atlassian.com. For example for the URL `https://admin.atlassian.com/o/e026e7a7-1112-463a-8534-71c4b6a8ee21/overview`
 .. the Org ID is `e026e7a7-1112-463a-8534-71c4b6a8ee21`
@@ -77,7 +66,7 @@ You can test that the wodle works by running it and checking that it outputs log
 ```
 
 # add rules
-Events only generate alerts if they are matched by a rule. Go to the rules configuration and create a new rules file `0772-atlassian_rules.xml` and fill it with the contents of [/rules/0772-atlassian_rules.xml](/rules/0772-atlassian_rules.xml).
+Events only generate alerts if they are matched by a rule. Go to the rules configuration and create a new rules files `0800-jira_rules.xml` and `1000-confluence_rules.xml` respectively fill them with the contents of [/rules/0800-jira_rules.xml](/rules/0800-jira_rules.xml) and [/rules/1000-confluence_rules.xml](/rules/1000-confluence_rules.xml).
 
 # change ossec.conf
 Add this wodle configuration to `/var/ossec/etc/ossec.conf` to ensure that the wodle is called periodically by Wazuh. In the Wazuh-provided Docker installion this file is modified in `~/wazuh-docker/multi-node/config/wazuh_cluster`.
@@ -85,7 +74,17 @@ Add this wodle configuration to `/var/ossec/etc/ossec.conf` to ensure that the w
   <wodle name="command">
     <disabled>no</disabled>
     <tag>atlassian</tag>
-    <command>/var/ossec/wodles/atlassian/atlassian -o 24</command>
+    <command>/var/ossec/wodles/atlassian/jira</command>
+    <interval>5m</interval>
+    <ignore_output>no</ignore_output>
+    <run_on_start>yes</run_on_start>
+    <timeout>0</timeout>
+  </wodle>
+
+  <wodle name="command">
+    <disabled>no</disabled>
+    <tag>atlassian</tag>
+    <command>/var/ossec/wodles/atlassian/confluence</command>
     <interval>5m</interval>
     <ignore_output>no</ignore_output>
     <run_on_start>yes</run_on_start>
